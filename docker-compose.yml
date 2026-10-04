@@ -1,0 +1,55 @@
+services:
+  subtitle:
+    build:
+      context: .
+      target: runtime
+    image: subtitle-app:runtime
+    volumes:
+      - ./data:/data
+      - whisper-models:/models
+    environment:
+      HF_HOME: /models
+      XDG_CACHE_HOME: /models/cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command: ["--help"]
+
+  test:
+    build:
+      context: .
+      target: dev
+    image: subtitle-app:dev
+    volumes:
+      - .:/app
+      - /app/.venv
+      - /app/.pytest_cache
+      - whisper-models:/models
+    environment:
+      HF_HOME: /models
+      XDG_CACHE_HOME: /models/cache
+    command: ["/app/.venv/bin/pytest", "-p", "no:cacheprovider"]
+
+  desktop:
+    profiles: ["desktop"]
+    build:
+      context: .
+      target: runtime
+    image: subtitle-app:runtime
+    entrypoint: ["/app/.venv/bin/subtitle-desktop"]
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+      HF_HOME: /models
+      XDG_CACHE_HOME: /models/cache
+    volumes:
+      - ./data:/data
+      - whisper-models:/models
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  whisper-models:

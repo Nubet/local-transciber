@@ -1,0 +1,148 @@
+import { Button, HorizontalBox, LineEdit, ProgressIndicator, VerticalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Subtitle Studio";
+    width: 980px;
+    height: 760px;
+    background: #0c1117;
+
+    in-out property <string> selected-file: "No video selected";
+    in-out property <string> output-file: "Output will be saved next to the video";
+    in-out property <string> language: "pl";
+    in-out property <string> model: "small";
+    in-out property <string> status: "Ready for a video";
+    in-out property <string> status-kind: "idle";
+    in-out property <float> progress: 0.0;
+    in-out property <bool> busy: false;
+    in-out property <bool> has-video: false;
+    in-out property <bool> has-segments: false;
+    in-out property <[{start: string, finish: string, text: string}]> segments: [];
+
+    callback choose-file();
+    callback choose-output();
+    callback start-transcription();
+    callback cancel-transcription();
+    callback edit-segment(int, string);
+    callback save-edits();
+
+    VerticalBox {
+        padding: 28px;
+        spacing: 18px;
+
+        HorizontalBox {
+            height: 56px;
+            spacing: 16px;
+            VerticalBox {
+                spacing: 2px;
+                Text { text: "SUBTITLE STUDIO"; color: #62d4d3; font-size: 11px; }
+                Text { text: "Create subtitles"; color: #ecf4f7; font-size: 25px; }
+            }
+            Rectangle { width: 1px; }
+            Text {
+                text: root.busy ? "PROCESSING" : "LOCAL MODE";
+                color: root.busy ? #f4c95d : #8aa0ad;
+                vertical-alignment: center;
+            }
+        }
+
+        Rectangle { height: 1px; background: #1e2a35; }
+
+        HorizontalBox {
+            height: 300px;
+            spacing: 18px;
+
+            Rectangle {
+                background: #101922;
+                border-radius: 14px;
+                border-width: 1px;
+                border-color: #1e2d39;
+                VerticalBox {
+                    padding: 22px;
+                    spacing: 14px;
+                    Text { text: "SOURCE"; color: #62d4d3; font-size: 11px; }
+                    Text { text: "Choose a video"; color: #e4edf0; font-size: 20px; }
+                    Button { text: "Choose video"; enabled: !root.busy; clicked => { root.choose-file(); } }
+                    Text { text: root.selected-file; color: #a9bac2; overflow: elide; }
+                    Button { text: "Choose output"; enabled: root.has-video && !root.busy; clicked => { root.choose-output(); } }
+                    Text { text: root.output-file; color: #a9bac2; overflow: elide; }
+                }
+            }
+
+            Rectangle {
+                width: 330px;
+                background: #131c25;
+                border-radius: 14px;
+                border-width: 1px;
+                border-color: #263743;
+                VerticalBox {
+                    padding: 22px;
+                    spacing: 12px;
+                    Text { text: "TRANSCRIPTION"; color: #62d4d3; font-size: 11px; }
+                    Text { text: "Settings"; color: #e4edf0; font-size: 20px; }
+                    Text { text: "Language"; color: #718392; font-size: 11px; }
+                    LineEdit { text <=> root.language; placeholder-text: "pl"; }
+                    Text { text: "Model"; color: #718392; font-size: 11px; }
+                    LineEdit { text <=> root.model; placeholder-text: "small"; }
+                    Button {
+                        text: root.busy ? "Transcribing..." : "Create subtitles";
+                        enabled: root.has-video && !root.busy;
+                        clicked => { root.start-transcription(); }
+                    }
+                    Button { text: "Cancel"; enabled: root.busy; clicked => { root.cancel-transcription(); } }
+                }
+            }
+        }
+
+        Rectangle {
+            height: 88px;
+            background: #131c25;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: #263743;
+            VerticalBox {
+                padding: 18px;
+                spacing: 10px;
+                HorizontalBox {
+                    Text { text: "STATUS"; color: #62d4d3; font-size: 11px; }
+                    Rectangle { width: 1px; }
+                    Text {
+                        text: root.status;
+                        color: root.status-kind == "error" ? #f7768e :
+                            (root.status-kind == "success" ? #8bd5a6 : #d8e2e8);
+                    }
+                }
+                ProgressIndicator { progress: root.progress; }
+            }
+        }
+
+        if root.has-segments : Rectangle {
+            height: 240px;
+            background: #131c25;
+            border-radius: 14px;
+            border-width: 1px;
+            border-color: #263743;
+            VerticalBox {
+                padding: 18px;
+                spacing: 10px;
+                HorizontalBox {
+                    Text { text: "SUBTITLES"; color: #62d4d3; font-size: 11px; }
+                    Rectangle { width: 1px; }
+                    Button { text: "Save edits"; clicked => { root.save-edits(); } }
+                }
+                VerticalBox {
+                    for cue[index] in root.segments : Rectangle {
+                        height: 48px;
+                        background: Math.mod(index, 2) == 0 ? #17232d : #131c25;
+                        HorizontalBox {
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            spacing: 8px;
+                            Text { text: cue.start + "  " + cue.finish; color: #8196a3; width: 150px; }
+                            LineEdit { text: cue.text; edited(text) => { root.edit-segment(index, text); } }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
